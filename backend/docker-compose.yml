@@ -1,0 +1,47 @@
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb2
+    restart: always
+    ports:
+      - '27017:27017'
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+
+  # auth-service:
+  #   build: ./backend/auth-service
+  #   container_name: auth-service
+  #   ports:
+  #     - '5000:5000'
+  #   depends_on:
+  #     - mongodb
+  #   environment:
+  #     - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}/authDB?authSource=${MONGO_DB_AUTH}
+
+  # image-service:
+  #   build: ./backend/image-service
+  #   container_name: image-service
+  #   ports:
+  #     - '5001:5001'
+  #   depends_on:
+  #     - mongodb
+  #   environment:
+  #     - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}/imageDB?authSource=${MONGO_DB_AUTH}
+
+  # friendship-service:
+  #   build: ./backend/friendship-service
+  #   container_name: friendship-service
+  #   ports:
+  #     - '5002:5002'
+  #   depends_on:
+  #     - mongodb
+  #   environment:
+  #     - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}/friendshipDB?authSource=${MONGO_DB_AUTH}
+
+volumes:
+  mongo_data:

@@ -1,0 +1,17 @@
+{
+  "name": "everstory-be",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@nestjs/passport": "^11.0.5",
+    "@types/passport-jwt": "^4.0.1",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1"
+  }
+}

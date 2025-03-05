@@ -4,7 +4,6 @@ import {
   Body,
   UseGuards,
   Get,
-  Request,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDTO } from './dto/request/signup.dto';
@@ -14,6 +13,8 @@ import { RouteConstants } from '../common/constant/route.constant';
 import { AuthResponseDTO } from './dto/response/auth-response.dto';
 import { SkipJwtAuth } from './decorator/skip-jwt-auth.decorator';
 import { LoggedInUser } from '../common/decorator/logged-in-user.decorator';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventConstants } from '../common/constant/event.constant';
 
 @Controller(RouteConstants.AUTH_CONTROLLER)
 export class AuthController {
@@ -35,5 +36,19 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getProfile(@LoggedInUser() loggedInUser: AuthResponseDTO) {
     return this.authService.findByEmail(loggedInUser.getEmail());
+  }
+
+  @MessagePattern(EventConstants.REMOVE_PROFILE_PHOTO)
+  async handleRemoveProfilePhoto(@Payload() data: { email: string }) {
+    const { email } = data;
+    return await this.authService.updateProfilePhoto(email, '');
+  }
+
+  @MessagePattern(EventConstants.UPDATE_PROFILE_PHOTO)
+  async handleUpdateProfilePhoto(
+    @Payload() data: { email: string; profilePhotoUrl: string },
+  ) {
+    const { email, profilePhotoUrl } = data;
+    return await this.authService.updateProfilePhoto(email, profilePhotoUrl);
   }
 }

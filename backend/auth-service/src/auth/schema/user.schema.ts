@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 import { AbstractSchema } from '../../common/schema/abstract.schema';
-import { AccountRole } from '../enum/account-role.enum';
 import { DbConstants } from '../../common/constant/db.constant';
 import { HydratedDocument } from 'mongoose';
 
@@ -15,9 +14,6 @@ export class User extends AbstractSchema {
   @Prop({ required: true })
   password: string;
 
-  @Prop({ default: AccountRole.USER, enum: AccountRole })
-  role: string;
-
   @Prop({ required: true })
   firstName: string;
 
@@ -26,6 +22,9 @@ export class User extends AbstractSchema {
 
   @Prop({ default: true })
   private: boolean;
+
+  @Prop({ default: null, type: String })
+  profilePhoto: string | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

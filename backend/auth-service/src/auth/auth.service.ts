@@ -13,6 +13,7 @@ import { JwtService } from '@nestjs/jwt';
 import { LoginDTO } from './dto/request/login.dto';
 import { SignupDTO } from './dto/request/signup.dto';
 import { UserRepository } from './user.repository';
+import { isEmpty } from 'lodash';
 
 @Injectable()
 export class AuthService {
@@ -38,7 +39,7 @@ export class AuthService {
         `Successfully created a new user with email :: ${createUserDTO.getEmail()}`,
       );
 
-      const payload = { email: user.email, sub: user._id, role: user.role };
+      const payload = { email: user.email, sub: user._id };
       const accessToken = this.jwtService.sign(payload);
 
       return new AuthResponseDTO(user, accessToken);
@@ -69,7 +70,7 @@ export class AuthService {
 
       this.logger.log(`Logged in successfully for email :: ${loginDTO.email}`);
 
-      const payload = { email: user.email, sub: user._id, role: user.role };
+      const payload = { email: user.email, sub: user._id };
       const accessToken = this.jwtService.sign(payload);
 
       return new AuthResponseDTO(user, accessToken);
@@ -92,5 +93,35 @@ export class AuthService {
       return user;
     }
     throw new BadRequestException(`No user found with email :: ${email}`);
+  }
+
+  async updateProfilePhoto(email: string, profilePhotoUrl: string) {
+    this.logger.log(
+      `Attempting to ${isEmpty(profilePhotoUrl) ? 'remove' : 'update'} profile photo for email :: ${email}`,
+    );
+    try {
+      const user = await this.userRepository.findByEmail(email);
+      if (!user) {
+        this.logger.warn(`User not found with email: ${email}`);
+        throw new BadRequestException(`No user found with email :: ${email}`);
+      }
+
+      await this.userRepository.updateUserByEmail(email, {
+        profilePhoto: !isEmpty(profilePhotoUrl) ? profilePhotoUrl : null,
+      });
+
+      this.logger.log(
+        `Successfully updated profile photo for user with email :: ${email}`,
+      );
+      return {
+        message: `Profile photo ${!isEmpty(profilePhotoUrl) ? 'updated' : 'removed'} successfully`,
+        profilePhotoUrl,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error while updating profile photo for email :: ${email} | Error :: ${error.message}`,
+      );
+      throw new InternalServerErrorException('Failed to update profile photo');
+    }
   }
 }

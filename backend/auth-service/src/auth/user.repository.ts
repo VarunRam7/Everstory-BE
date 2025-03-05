@@ -28,4 +28,9 @@ export class UserRepository {
       email: createUserDTO.getEmail().toLowerCase(),
     });
   }
+
+  async updateUserByEmail(email: string, updateData: Partial<User>) {
+    this.logger.log(`Attempting to update user with email :: ${email}`);
+    return this.userModel.updateOne({ email }, { $set: updateData }).exec();
+  }
 }

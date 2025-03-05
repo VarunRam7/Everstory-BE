@@ -1,15 +1,13 @@
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-import { ImageModule } from './image/image.module';
+import { ImageController } from './image.controller';
+import { ImageService } from './image.service';
 import { Module } from '@nestjs/common';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    ImageModule,
+    ConfigModule,
     ClientsModule.register([
       {
         name: 'AUTH_SERVICE',
@@ -18,7 +16,8 @@ import { Module } from '@nestjs/common';
       },
     ]),
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [ImageController],
+  providers: [ImageService],
+  exports: [ImageService],
 })
-export class AppModule {}
+export class ImageModule {}

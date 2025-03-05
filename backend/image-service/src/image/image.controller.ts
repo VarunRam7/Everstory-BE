@@ -27,6 +27,17 @@ export class ImageController {
     return { url: imageUrl };
   }
 
+  @Post(RouteConstants.UPLOAD_POST)
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadPost(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('userId') userId: string,
+    @Body('caption') caption: string,
+  ) {
+    const imageUrl = await this.imageService.uploadPost(file, userId, caption);
+    return { url: imageUrl };
+  }
+
   @Delete(RouteConstants.REMOVE_PROFILE_PHOTO)
   async removeProfilePhoto(
     @Body('profileImageUrl') profileImageUrl: string,

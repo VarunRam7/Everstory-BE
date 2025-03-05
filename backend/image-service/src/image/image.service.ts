@@ -7,16 +7,19 @@ import {
 
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
-import { UploadApiResponse } from 'cloudinary';
+import { UploadApiErrorResponse, UploadApiResponse } from 'cloudinary';
 import { v2 as cloudinary } from 'cloudinary';
 import { EventConstants } from '../common/constant/event.constant';
 import { lastValueFrom } from 'rxjs';
+import { nanoid } from 'nanoid';
+import { ImageRepository } from './image.repository';
 
 @Injectable()
 export class ImageService {
   constructor(
     private configService: ConfigService,
     @Inject('AUTH_SERVICE') private readonly authServiceClient: ClientProxy,
+    private readonly imageRepository: ImageRepository,
   ) {
     cloudinary.config({
       cloud_name: this.configService.get('CLOUDINARY_CLOUD_NAME'),
@@ -80,6 +83,66 @@ export class ImageService {
                   eventError,
                 );
                 reject(eventError);
+              }
+            }
+          },
+        )
+        .end(file.buffer);
+    });
+  }
+
+  async uploadPost(
+    file: Express.Multer.File,
+    userId: string,
+    caption: string,
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      if (!file) {
+        this.logger.warn('No file received');
+        throw new BadRequestException('No file uploaded');
+      }
+
+      if (!userId) {
+        throw new BadRequestException(
+          'User Id is required for uploading a post',
+        );
+      }
+
+      this.logger.log(`Attempting to upload post for id :: ${userId}`);
+
+      const publicId = `${userId}_${nanoid()}`;
+
+      cloudinary.uploader
+        .upload_stream(
+          {
+            folder: 'posts',
+            public_id: publicId,
+            overwrite: false,
+            invalidate: true,
+          },
+          async (error: UploadApiErrorResponse, result: UploadApiResponse) => {
+            if (error) {
+              this.logger.error(`Cloudinary upload failed :: ${error.message}`);
+              reject(error);
+            } else {
+              this.logger.log(
+                `Post uploaded successfully in Cloudinary for id :: ${userId}`,
+              );
+
+              try {
+                await this.imageRepository.createPost(
+                  userId,
+                  result.secure_url,
+                  caption,
+                );
+                this.logger.log(`Post saved successfully in MongoDB`);
+                resolve(result.secure_url);
+              } catch (dbError) {
+                this.logger.error(
+                  'Error saving post to MongoDB:',
+                  dbError.message,
+                );
+                reject(dbError);
               }
             }
           },

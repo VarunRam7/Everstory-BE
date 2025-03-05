@@ -3,7 +3,6 @@ export class AuthResponseDTO {
   private firstName: string;
   private lastName: string;
   private email: string;
-  private role: string;
   private accessToken: string;
 
   constructor(user: any, accessToken: string) {
@@ -11,7 +10,6 @@ export class AuthResponseDTO {
     this.firstName = user.firstName;
     this.lastName = user.lastName;
     this.email = user.email;
-    this.role = user.role;
     this.accessToken = accessToken;
   }
 
@@ -45,14 +43,6 @@ export class AuthResponseDTO {
 
   public setEmail(email: string): void {
     this.email = email;
-  }
-
-  public getRole(): string {
-    return this.role;
-  }
-
-  public setRole(role: string): void {
-    this.role = role;
   }
 
   public getAccessToken(): string {

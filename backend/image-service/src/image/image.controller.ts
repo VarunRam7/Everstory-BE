@@ -7,6 +7,9 @@ import {
   Body,
   BadRequestException,
   Delete,
+  Get,
+  Query,
+  Param,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ImageService } from './image.service';
@@ -23,7 +26,11 @@ export class ImageController {
     @UploadedFile() file: Express.Multer.File,
     @Body('email') email: any,
   ) {
-    const imageUrl = await this.imageService.uploadImage(file, email);
+    const imageUrl = await this.imageService
+      .uploadImage(file, email)
+      .catch((error) => {
+        throw error;
+      });
     return { url: imageUrl };
   }
 
@@ -34,7 +41,11 @@ export class ImageController {
     @Body('userId') userId: string,
     @Body('caption') caption: string,
   ) {
-    const imageUrl = await this.imageService.uploadPost(file, userId, caption);
+    const imageUrl = await this.imageService
+      .uploadPost(file, userId, caption)
+      .catch((error) => {
+        throw error;
+      });
     return { url: imageUrl };
   }
 
@@ -43,6 +54,38 @@ export class ImageController {
     @Body('profileImageUrl') profileImageUrl: string,
     @Body('email') email: string,
   ) {
-    return await this.imageService.removeProfilePhoto(profileImageUrl, email);
+    return await this.imageService
+      .removeProfilePhoto(profileImageUrl, email)
+      .catch((error) => {
+        throw error;
+      });
+  }
+
+  @Get(RouteConstants.GET_MY_POSTS)
+  async getMyPosts(
+    @Query('userId') userId: string,
+    @Query('page') page: number = 1,
+    @Query('pageSize') pageSize: number = 10,
+  ) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+    return await this.imageService
+      .getMyPosts(userId, page, pageSize)
+      .catch((error) => {
+        throw error;
+      });
+  }
+
+  @Delete(RouteConstants.DELETE_POST)
+  async deletePost(
+    @Param('postId') postId: string,
+    @Body('imageUrl') imageUrl: string,
+  ) {
+    return await this.imageService
+      .deletePost(postId, imageUrl)
+      .catch((error) => {
+        throw error;
+      });
   }
 }

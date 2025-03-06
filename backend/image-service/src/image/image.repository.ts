@@ -25,4 +25,35 @@ export class ImageRepository {
       caption: caption || '',
     });
   }
+
+  async findPostsByUser(
+    userId: string,
+    page: number,
+    pageSize: number,
+  ): Promise<{
+    posts: ImageDocument[];
+    totalCount: number;
+    nextPage?: number;
+  }> {
+    const skip = (page - 1) * pageSize;
+
+    const posts = await this.imageModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pageSize)
+      .lean();
+
+    const totalPosts = await this.imageModel.countDocuments({
+      userId: new Types.ObjectId(userId),
+    });
+
+    const nextPage = skip + pageSize < totalPosts ? page + 1 : undefined;
+
+    return { posts, totalCount: totalPosts, nextPage };
+  }
+
+  async deletePostById(postId: string) {
+    return await this.imageModel.deleteOne({ _id: new Types.ObjectId(postId) });
+  }
 }

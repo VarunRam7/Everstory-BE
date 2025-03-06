@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schema/user.schema';
-import { SignupDTO } from './dto/request/signup.dto';
 import { DbConstants } from '../common/constant/db.constant';
 import { CreateUserDTO } from './dto/request/create-user.dto';
 

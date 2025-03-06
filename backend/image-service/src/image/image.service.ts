@@ -186,4 +186,50 @@ export class ImageService {
       throw new BadRequestException('Failed to delete image from Cloudinary');
     }
   }
+
+  async getMyPosts(userId: string, page: number, pageSize: number) {
+    this.logger.log(`Attempting to find posts for user :: ${userId}`);
+
+    const { posts, totalCount, nextPage } =
+      await this.imageRepository.findPostsByUser(userId, page, pageSize);
+
+    if (!posts || posts.length === 0) {
+      this.logger.warn(`No posts found for user :: ${userId}`);
+      return { posts: [], nextPage: null };
+    }
+    this.logger.log(`Posts successfully found for user :: ${userId}`);
+    return { posts, totalCount, nextPage };
+  }
+
+  async deletePost(postId: string, imageUrl: string) {
+    this.logger.log(`Attempting to delete post :: ${postId}`);
+
+    try {
+      if (!postId)
+        throw new BadRequestException(`Post id is required to delete the post`);
+
+      await this.imageRepository.deletePostById(postId);
+      this.logger.log(`Deleted post :: ${postId} successfully`);
+
+      const publicId = imageUrl
+        .split('/')
+        .slice(-2)
+        .join('/')
+        .replace(/\.[^.]+$/, '');
+
+      this.logger.log(
+        `Attempting to delete post :: ${publicId} from Cloudinary`,
+      );
+      await cloudinary.uploader.destroy(publicId);
+
+      this.logger.log(`Deleted ${publicId} successfully from Cloudinary`);
+
+      return { message: 'Post deleted successfully' };
+    } catch (error) {
+      this.logger.error(
+        `Error while attempting to delete post :: ${postId} | Error :: ${error}`,
+      );
+      throw new Error(`Failed to delete post`);
+    }
+  }
 }

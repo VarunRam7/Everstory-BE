@@ -21,7 +21,7 @@ export class User extends AbstractSchema {
   lastName: string;
 
   @Prop({ default: true })
-  private: boolean;
+  isPrivate: boolean;
 
   @Prop({ default: null, type: String })
   profilePhoto: string | null;

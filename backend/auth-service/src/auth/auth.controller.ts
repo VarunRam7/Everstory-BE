@@ -4,6 +4,8 @@ import {
   Body,
   UseGuards,
   Get,
+  Query,
+  Param,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDTO } from './dto/request/signup.dto';
@@ -50,5 +52,29 @@ export class AuthController {
   ) {
     const { email, profilePhotoUrl } = data;
     return await this.authService.updateProfilePhoto(email, profilePhotoUrl);
+  }
+
+  @Get(RouteConstants.GET_ALL_USERS)
+  @UseGuards(JwtAuthGuard)
+  async fetchUsers(
+    @LoggedInUser() loggedInUser: AuthResponseDTO,
+    @Query('searchString') searchString?: string,
+  ) {
+    return this.authService
+      .fetchUsers(searchString, loggedInUser, true)
+      .catch((error) => {
+        throw error;
+      });
+  }
+
+  @Get(RouteConstants.GET_USER_DETAILS_BY_ID)
+  @UseGuards(JwtAuthGuard)
+  async getUserDetailsById(
+    @Param('userId') userId: string,
+    @LoggedInUser() loggedInUser: AuthResponseDTO,
+  ) {
+    return this.authService.getUserDetailsById(userId,loggedInUser).catch((error) => {
+      throw error;
+    });
   }
 }

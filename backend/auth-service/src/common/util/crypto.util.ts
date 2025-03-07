@@ -3,8 +3,7 @@ import * as bcrypt from 'bcryptjs';
 // Change import
 
 export async function hashPassword(password: string): Promise<string> {
-  console.log('--->', bcrypt);
-  const salt = await bcrypt.genSalt(10); // Explicitly generate salt
+  const salt = await bcrypt.genSalt(10);
   return bcrypt.hash(password, salt);
 }
 

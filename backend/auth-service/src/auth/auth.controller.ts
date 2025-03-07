@@ -73,8 +73,21 @@ export class AuthController {
     @Param('userId') userId: string,
     @LoggedInUser() loggedInUser: AuthResponseDTO,
   ) {
-    return this.authService.getUserDetailsById(userId,loggedInUser).catch((error) => {
-      throw error;
-    });
+    return this.authService
+      .getUserDetailsById(userId, loggedInUser)
+      .catch((error) => {
+        throw error;
+      });
+  }
+
+  @MessagePattern(EventConstants.GET_FOLLOW_REQUEST_DETAILS)
+  async getFollowRequestUsersDetails(
+    @Payload() data: { requestBy: string; requestTo: string },
+  ) {
+    const { requestBy, requestTo } = data;
+    return await this.authService.getMultipleUserMinimalDetailsById(
+      requestBy,
+      requestTo,
+    );
   }
 }

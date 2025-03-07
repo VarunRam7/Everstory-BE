@@ -27,6 +27,8 @@ export class AuthService {
     private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
     @Inject('IMAGE_SERVICE') private readonly imageServiceClient: ClientProxy,
+    @Inject('FRIENDSHIP_SERVICE')
+    private readonly friendshipServiceClient: ClientProxy,
   ) {}
   private readonly logger = new Logger(AuthService.name);
 
@@ -177,25 +179,108 @@ export class AuthService {
       throw new BadRequestException('User not found');
     }
 
-    try {
-      this.logger.log(`Attempting to fetch posts for user :: ${userId}`);
-      const response = await lastValueFrom(
-        this.imageServiceClient.send(EventConstants.GET_USER_POSTS, { userId }),
-      );
+    this.logger.log(`Fetching user details for user :: ${userId}`);
 
-      this.logger.log(`Fetched posts successfully for user :: ${userId}`);
+    const [
+      userPostsResult,
+      isFollowingResult,
+      isRequestedResult,
+      followerFollowingCountResult,
+    ] = await Promise.allSettled([
+      lastValueFrom(
+        this.imageServiceClient.send(EventConstants.GET_USER_POSTS, {
+          userId,
+        }),
+      ),
+      lastValueFrom(
+        this.friendshipServiceClient.send(EventConstants.IS_FOLLOWING, {
+          followedBy: loggedInUser.getId().toString(),
+          followed: userId.toString(),
+        }),
+      ),
+      lastValueFrom(
+        this.friendshipServiceClient.send(EventConstants.IS_REQUESTED, {
+          followedBy: loggedInUser.getId().toString(),
+          followed: userId.toString(),
+        }),
+      ),
+      lastValueFrom(
+        this.friendshipServiceClient.send(EventConstants.FOLLOW_COUNT, {
+          userId,
+        }),
+      ),
+    ]);
 
-      if (user.isPrivate) {
-        return new UserDetailedDTO(user, response.totalCount);
-      } else {
-        return new UserDetailedDTO(user, response.totalCount, response.posts);
-      }
-    } catch (eventError) {
-      this.logger.error(
-        `Error sending get event to image-service:`,
-        eventError,
-      );
-      throw eventError;
+    const userPosts =
+      userPostsResult.status === 'fulfilled'
+        ? (userPostsResult.value as { totalCount: number; posts: any[] })
+        : { totalCount: 0, posts: [] };
+
+    const isFollowing =
+      isFollowingResult.status === 'fulfilled'
+        ? (isFollowingResult.value as boolean)
+        : false;
+
+    const isRequested =
+      isRequestedResult.status === 'fulfilled'
+        ? (isRequestedResult.value as boolean)
+        : false;
+
+    const followerFollowingCount =
+      followerFollowingCountResult.status === 'fulfilled'
+        ? (followerFollowingCountResult.value as {
+            followers: number;
+            following: number;
+          })
+        : { followers: 0, following: 0 };
+
+    if (userPostsResult.status === 'rejected') {
+      this.logger.error(`Error fetching posts:`, userPostsResult.reason);
     }
+    if (isFollowingResult.status === 'rejected') {
+      this.logger.error(
+        `Error checking follow status:`,
+        isFollowingResult.reason,
+      );
+    }
+    if (isRequestedResult.status === 'rejected') {
+      this.logger.error(
+        `Error checking request status:`,
+        isRequestedResult.reason,
+      );
+    }
+
+    if (followerFollowingCountResult.status === 'rejected') {
+      this.logger.error(
+        `Error fetching follower/following count:`,
+        followerFollowingCountResult.reason,
+      );
+    }
+
+    return new UserDetailedDTO(
+      user,
+      userPosts.totalCount,
+      user.isPrivate && !isFollowing ? [] : userPosts.posts,
+      user.isPrivate ? isFollowing : true,
+      isRequested ? true : false,
+      followerFollowingCount.followers,
+      followerFollowingCount.following,
+    );
+  }
+
+  async getMultipleUserMinimalDetailsById(
+    userId1: string,
+    userId2: string,
+  ): Promise<UserMinimalDTO[]> {
+    const [user1, user2] = await Promise.all([
+      this.userRepository.findUserById(userId1),
+      this.userRepository.findUserById(userId2),
+    ]);
+
+    if (!user1 || !user2) {
+      throw new BadRequestException('One or both users not found');
+    }
+
+    return [new UserMinimalDTO(user1), new UserMinimalDTO(user2)];
   }
 }

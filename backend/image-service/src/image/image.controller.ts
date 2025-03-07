@@ -93,7 +93,12 @@ export class ImageController {
 
   @MessagePattern(EventConstants.GET_USER_POSTS)
   async handleUpdateProfilePhoto(
-    @Payload() data: { userId: string; page: 1; pageSize: 10 },
+    @Payload()
+    data: {
+      userId: string;
+      page: 1;
+      pageSize: 10;
+    },
   ) {
     const { userId, page, pageSize } = data;
     return await this.imageService

@@ -14,6 +14,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ImageService } from './image.service';
 import { RouteConstants } from '../common/constant/route.constant';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventConstants } from '../common/constant/event.constant';
 
 @Controller(RouteConstants.IMAGE_CONTROLLER)
 export class ImageController {
@@ -84,6 +86,18 @@ export class ImageController {
   ) {
     return await this.imageService
       .deletePost(postId, imageUrl)
+      .catch((error) => {
+        throw error;
+      });
+  }
+
+  @MessagePattern(EventConstants.GET_USER_POSTS)
+  async handleUpdateProfilePhoto(
+    @Payload() data: { userId: string; page: 1; pageSize: 10 },
+  ) {
+    const { userId, page, pageSize } = data;
+    return await this.imageService
+      .getMyPosts(userId, page, pageSize)
       .catch((error) => {
         throw error;
       });

@@ -1,3 +1,5 @@
+import { ClientsModule, Transport } from '@nestjs/microservices';
+
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { ConfigModule } from '@nestjs/config';
@@ -19,6 +21,13 @@ import { UserSchema } from './schema/user.schema';
       secret: process.env.JWT_SECRET || 'default_secret',
       signOptions: { expiresIn: '24h' },
     }),
+    ClientsModule.register([
+      {
+        name: 'IMAGE_SERVICE',
+        transport: Transport.TCP,
+        options: { host: 'localhost', port: 3002 }, //TODO change to image-service when migrating to docker compose from local server
+      },
+    ]),
   ],
   controllers: [AuthController],
   providers: [AuthService, UserRepository, JwtStrategy],

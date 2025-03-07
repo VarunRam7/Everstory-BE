@@ -1,3 +1,4 @@
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { AppController } from './app.controller';
@@ -18,6 +19,13 @@ import { MongooseModule } from '@nestjs/mongoose';
       }),
     }),
     AuthModule,
+    ClientsModule.register([
+      {
+        name: 'IMAGE_SERVICE',
+        transport: Transport.TCP,
+        options: { host: 'localhost', port: 3002 }, //TODO change to image-service when migrating to docker compose from local server
+      },
+    ]),
   ],
   controllers: [AppController],
   providers: [AppService],

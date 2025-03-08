@@ -90,4 +90,15 @@ export class AuthController {
       requestTo,
     );
   }
+
+  @MessagePattern(EventConstants.GET_PUBLIC_ACCOUNTS)
+  async getPublicAccounts() {
+    return await this.authService.getPublicAccounts();
+  }
+
+  @MessagePattern(EventConstants.GET_USER_DETAILS_BY_IDS)
+  async getUserMinimalDetailsForIds(@Payload() data: { userIds: string[] }) {
+    const { userIds } = data;
+    return await this.authService.getUserMinimalDetailsForIds(userIds);
+  }
 }

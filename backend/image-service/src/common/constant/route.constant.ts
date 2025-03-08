@@ -5,4 +5,5 @@ export class RouteConstants {
   static readonly UPLOAD_POST = 'upload-post';
   static readonly GET_MY_POSTS = 'my-posts';
   static readonly DELETE_POST = ':postId';
+  static readonly GET_HOME_FEED = 'home';
 }

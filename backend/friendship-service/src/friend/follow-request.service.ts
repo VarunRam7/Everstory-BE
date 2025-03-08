@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  forwardRef,
   Inject,
   Injectable,
   Logger,
@@ -21,6 +22,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import { EventConstants } from '../common/constant/event.constant';
 import { RelationshipService } from './relationship.service';
+import { FollowRequestGateway } from './follow-request.gateway';
 
 @Injectable()
 export class FollowRequestService {
@@ -28,6 +30,8 @@ export class FollowRequestService {
     private readonly followRequestRepository: FollowRequestRepository,
     @Inject('AUTH_SERVICE') private readonly authServiceClient: ClientProxy,
     private readonly relationshipService: RelationshipService,
+    @Inject(forwardRef(() => FollowRequestGateway))
+    private readonly followRequestGateway: FollowRequestGateway,
   ) {}
   private readonly logger = new Logger(FollowRequestService.name);
 
@@ -94,6 +98,10 @@ export class FollowRequestService {
       await this.followRequestRepository.createFollowRequest(
         createFollowRequestDTO,
       );
+    await this.followRequestGateway.notifyNewFollowRequest(
+      createFollowRequestDTO.getRequestTo().id.toString(),
+    );
+
     this.logger.log(
       `Successfully created a follow request from ${followRequest.requestBy} to ${followRequest.requestTo}`,
     );
@@ -112,8 +120,11 @@ export class FollowRequestService {
         );
         return null;
       }
+      await this.followRequestGateway.notifyNewFollowRequest(requestTo);
 
-      this.logger.log(`user :: ${requestBy} revoked the follow request sent to user :: ${requestTo}`);
+      this.logger.log(
+        `user :: ${requestBy} revoked the follow request sent to user :: ${requestTo}`,
+      );
       return result;
     } catch (error) {
       this.logger.error(

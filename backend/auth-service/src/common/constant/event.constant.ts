@@ -6,4 +6,6 @@ export const EventConstants = {
   IS_FOLLOWING: 'is_following',
   IS_REQUESTED: 'is_requested',
   FOLLOW_COUNT: 'follow_count',
+  GET_PUBLIC_ACCOUNTS: 'get_public_accounts',
+  GET_USER_DETAILS_BY_IDS: 'get_user_details_by_ids',
 };

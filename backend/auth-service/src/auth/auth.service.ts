@@ -111,7 +111,31 @@ export class AuthService {
     const user = await this.userRepository.findByEmail(email);
     if (user) {
       this.logger.log(`Successfully found user for email :: ${email}`);
-      return user;
+      let followerFollowingCount;
+      try {
+        this.logger.log(
+          `Attempting to send event to friendship service to find follow count details for user :: ${user.id.toString()} `,
+        );
+        followerFollowingCount = await lastValueFrom(
+          this.friendshipServiceClient.send(EventConstants.FOLLOW_COUNT, {
+            userId: user.id.toString(),
+          }),
+        );
+        this.logger.log(
+          `Fetched follow count details from friendship service for user :: ${user.id.toString()}`,
+        );
+      } catch (eventError) {
+        this.logger.error(
+          `Error sending get event to friendship-service:`,
+          eventError,
+        );
+        throw eventError;
+      }
+      return {
+        ...user.toObject(),
+        followers: followerFollowingCount.followers || 0,
+        following: followerFollowingCount.following || 0,
+      };
     }
     throw new BadRequestException(`No user found with email :: ${email}`);
   }

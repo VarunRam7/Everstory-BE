@@ -52,6 +52,27 @@ export class UserRepository {
   }
 
   async findUserById(userId: string): Promise<User | null> {
-    return this.userModel.findById(new Types.ObjectId(userId)).select('-password').lean().exec();
+    this.logger.log(`Attempting to find user by id :: ${userId}`);
+    return this.userModel
+      .findById(new Types.ObjectId(userId))
+      .select('-password')
+      .lean()
+      .exec();
+  }
+
+  async findAllPublicAccountUsers() {
+    this.logger.log(`Attempting to fetch all public accounts`);
+    return this.userModel.find({ isPrivate: false });
+  }
+
+  async findUserMinimalDetailsForIds(
+    userIds: string[],
+  ): Promise<UserDocument[] | null> {
+    this.logger.log(
+      `Attempting to find user details for ${userIds.length} users`,
+    );
+    const objectIdArray = userIds.map((id) => new Types.ObjectId(id));
+
+    return this.userModel.find({ _id: { $in: objectIdArray } });
   }
 }

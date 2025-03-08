@@ -13,13 +13,17 @@ import { EventConstants } from '../common/constant/event.constant';
 import { lastValueFrom } from 'rxjs';
 import { nanoid } from 'nanoid';
 import { ImageRepository } from './image.repository';
+import { ImageGateway } from './image.gateway';
 
 @Injectable()
 export class ImageService {
   constructor(
     private configService: ConfigService,
     @Inject('AUTH_SERVICE') private readonly authServiceClient: ClientProxy,
+    @Inject('FRIENDSHIP_SERVICE')
+    private readonly friendshipServiceClient: ClientProxy,
     private readonly imageRepository: ImageRepository,
+    private readonly imageGateway: ImageGateway,
   ) {
     cloudinary.config({
       cloud_name: this.configService.get('CLOUDINARY_CLOUD_NAME'),
@@ -135,6 +139,7 @@ export class ImageService {
                   result.secure_url,
                   caption,
                 );
+                this.imageGateway.notifyNewPost();
                 this.logger.log(`Post saved successfully in MongoDB`);
                 resolve(result.secure_url);
               } catch (dbError) {
@@ -201,6 +206,71 @@ export class ImageService {
     return { posts, totalCount, nextPage };
   }
 
+  async getHomeFeed(userId: string, page: number, pageSize: number) {
+    this.logger.log(`Attempting to find home feed for user :: ${userId}`);
+
+    try {
+      const [followingUsers, publicAccounts] = await Promise.all([
+        lastValueFrom(
+          this.friendshipServiceClient.send(EventConstants.FOLLOWING_USERS, {
+            userId,
+          }),
+        ),
+        lastValueFrom(
+          this.authServiceClient.send(EventConstants.GET_PUBLIC_ACCOUNTS, {}),
+        ),
+      ]);
+
+      this.logger.log(`Fetched ${followingUsers.length} following users`);
+      this.logger.log(`Fetched ${publicAccounts.length} public accounts`);
+
+      const publicAccountIds = new Set(
+        publicAccounts.map((acc) => acc._id.toString()),
+      );
+
+      const privateFollowingUserIds = followingUsers.filter(
+        (id) => !publicAccountIds.has(id),
+      );
+
+      let additionalUserDetails = [];
+      if (privateFollowingUserIds.length > 0) {
+        this.logger.log(
+          `Fetching details for ${privateFollowingUserIds.length} private following accounts`,
+        );
+
+        additionalUserDetails = await lastValueFrom(
+          this.authServiceClient.send(EventConstants.GET_USER_DETAILS_BY_IDS, {
+            userIds: privateFollowingUserIds,
+          }),
+        );
+      }
+
+      const allUserIds = [userId, ...followingUsers, ...[...publicAccountIds]];
+      const homeFeed = await this.imageRepository.findPostsByUsers(
+        allUserIds,
+        page,
+        pageSize,
+      );
+
+      const userDetailsMap = new Map();
+      publicAccounts.forEach((user) => userDetailsMap.set(user._id, user));
+
+      additionalUserDetails?.forEach((user: any) =>
+        userDetailsMap.set(user.id.toString(), user),
+      );
+
+      const postsWithUserDetails = homeFeed.posts.map((post) => ({
+        ...post,
+        user: userDetailsMap.get(post.userId.toString()) || null,
+      }));
+
+      return { ...homeFeed, posts: postsWithUserDetails };
+    } catch (error) {
+      this.logger.error(`Error fetching home feed for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
   async deletePost(postId: string, imageUrl: string) {
     this.logger.log(`Attempting to delete post :: ${postId}`);
 
@@ -209,6 +279,7 @@ export class ImageService {
         throw new BadRequestException(`Post id is required to delete the post`);
 
       await this.imageRepository.deletePostById(postId);
+      this.imageGateway.notifyNewPost();
       this.logger.log(`Deleted post :: ${postId} successfully`);
 
       const publicId = imageUrl

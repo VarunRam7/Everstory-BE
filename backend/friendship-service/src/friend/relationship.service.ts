@@ -27,9 +27,14 @@ export class RelationshipService {
 
   async unfollowUser(followedBy: string, followed: string) {
     try {
-      const result = await this.relationshipRepository.removeRelationship(followedBy, followed);
+      const result = await this.relationshipRepository.removeRelationship(
+        followedBy,
+        followed,
+      );
       if (!result) {
-        this.logger.warn(`No existing relationship found between ${followedBy} and ${followed}`);
+        this.logger.warn(
+          `No existing relationship found between ${followedBy} and ${followed}`,
+        );
         return null;
       }
 
@@ -37,12 +42,11 @@ export class RelationshipService {
       return result;
     } catch (error) {
       this.logger.error(
-        `Error while attempting to remove relationship between ${followedBy} and ${followed} | Error : ${error}`
+        `Error while attempting to remove relationship between ${followedBy} and ${followed} | Error : ${error}`,
       );
       throw error;
     }
   }
-
 
   async isFollowing(followedBy: string, followed: string): Promise<boolean> {
     try {
@@ -60,7 +64,6 @@ export class RelationshipService {
   }
 
   async getUserFollowerFollowingCount(userId: string) {
-
     const { followers, following } =
       await this.relationshipRepository.getFollowersAndFollowingCount(userId);
 
@@ -68,5 +71,12 @@ export class RelationshipService {
       `User ${userId} has ${followers} followers and is following ${following} users`,
     );
     return { followers, following };
+  }
+
+  async getFollowingUsers(userId: string) {
+    const followingUsers =
+      await this.relationshipRepository.findFollowingUsers(userId);
+    this.logger.log(`Found users who are being followed by user :: ${userId}`);
+    return followingUsers;
   }
 }

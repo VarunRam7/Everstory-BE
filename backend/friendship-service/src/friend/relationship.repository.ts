@@ -67,4 +67,21 @@ export class RelationshipRepository {
       })
       .exec();
   }
+
+  async findFollowingUsers(userId: string): Promise<string[]> {
+    this.logger.log(
+      `Attempting to find users who are being followed by user :: ${userId}`,
+    );
+
+    const relationships = await this.relationshipModel
+      .find({ followedBy: new Types.ObjectId(userId) }, { followed: 1, _id: 0 })
+      .lean()
+      .exec();
+
+    const followedUsers = relationships.flatMap(
+      (rel) => rel?.followed.toString() || [],
+    );
+
+    return followedUsers;
+  }
 }

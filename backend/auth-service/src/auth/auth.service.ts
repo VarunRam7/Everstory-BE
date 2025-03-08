@@ -307,4 +307,31 @@ export class AuthService {
 
     return [new UserMinimalDTO(user1), new UserMinimalDTO(user2)];
   }
+
+  async getPublicAccounts(): Promise<any> {
+    try {
+      let response = await this.userRepository.findAllPublicAccountUsers();
+      if (response.length === 0) this.logger.log(`No public accounts found`);
+      else this.logger.log(`${response.length} public accounts found`);
+      return response;
+    } catch (error) {
+      this.logger.error(
+        `Error while attempting to fetch all public accounts | Error : ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  async getUserMinimalDetailsForIds(
+    userIds: string[],
+  ): Promise<UserMinimalDTO[]> {
+    const userMinimalDetails =
+      await this.userRepository.findUserMinimalDetailsForIds(userIds);
+
+    if (!userMinimalDetails || userMinimalDetails.length === 0) {
+      return [];
+    }
+
+    return userMinimalDetails.map((user) => new UserMinimalDTO(user));
+  }
 }

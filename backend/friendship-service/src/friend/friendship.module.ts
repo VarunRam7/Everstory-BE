@@ -2,6 +2,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 
 import { ConfigModule } from '@nestjs/config';
 import { DbConstants } from '../common/constant/db.constant';
+import { FollowRequestGateway } from './follow-request.gateway';
 import { FollowRequestRepository } from './follow-request.repository';
 import { FollowRequestSchema } from './schema/follow-request.schema';
 import { FollowRequestService } from './follow-request.service';
@@ -33,7 +34,8 @@ import { RelationshipService } from './relationship.service';
     FollowRequestRepository,
     RelationshipRepository,
     RelationshipService,
+    FollowRequestGateway,
   ],
-  exports: [FollowRequestService, RelationshipService],
+  exports: [FollowRequestService, RelationshipService, FollowRequestGateway],
 })
 export class FriendshipModule {}

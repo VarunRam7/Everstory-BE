@@ -79,6 +79,22 @@ export class ImageController {
       });
   }
 
+  @Get(RouteConstants.GET_HOME_FEED)
+  async getHomeFeed(
+    @Query('userId') userId: string,
+    @Query('page') page: number = 1,
+    @Query('pageSize') pageSize: number = 10,
+  ) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+    return await this.imageService
+      .getHomeFeed(userId, page, pageSize)
+      .catch((error) => {
+        throw error;
+      });
+  }
+
   @Delete(RouteConstants.DELETE_POST)
   async deletePost(
     @Param('postId') postId: string,

@@ -84,4 +84,10 @@ export class FriendshipController {
     const { userId } = data;
     return await this.relationshipService.getUserFollowerFollowingCount(userId);
   }
+
+  @MessagePattern(EventConstants.FOLLOWING_USERS)
+  async getFollowingUsers(@Payload() data: { userId: string }) {
+    const { userId } = data;
+    return await this.relationshipService.getFollowingUsers(userId);
+  }
 }

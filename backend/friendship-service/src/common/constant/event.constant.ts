@@ -3,4 +3,5 @@ export const EventConstants = {
   IS_FOLLOWING: 'is_following',
   IS_REQUESTED: 'is_requested',
   FOLLOW_COUNT: 'follow_count',
+  FOLLOWING_USERS: 'following_users',
 };

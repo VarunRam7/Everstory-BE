@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # Expose the port for this microservice
-EXPOSE 5000
+EXPOSE 5000 3002
 
 # Start the NestJS application
 CMD ["npm", "run", "start"]

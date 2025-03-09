@@ -23,14 +23,14 @@ import { MongooseModule } from '@nestjs/mongoose';
       {
         name: 'IMAGE_SERVICE',
         transport: Transport.TCP,
-        options: { host: 'localhost', port: 3002 }, //TODO change to image-service when migrating to docker compose from local server
+        options: { host: 'image-service', port: 3002 },
       },
     ]),
     ClientsModule.register([
       {
         name: 'FRIENDSHIP_SERVICE',
         transport: Transport.TCP,
-        options: { host: 'localhost', port: 3003 }, //TODO change to friendship-service when migrating to docker compose from local server
+        options: { host: 'friendship-service', port: 3003 },
       },
     ]),
   ],

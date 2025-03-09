@@ -128,7 +128,6 @@ export class ImageController {
     },
   ) {
     const { userId, page, pageSize } = data;
-    console.log('User Id', userId);
 
     return await this.imageService
       .getMyPosts(userId, page, pageSize)

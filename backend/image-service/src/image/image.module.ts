@@ -20,14 +20,14 @@ import { MongooseModule } from '@nestjs/mongoose';
       {
         name: 'AUTH_SERVICE',
         transport: Transport.TCP,
-        options: { host: 'localhost', port: 3001 }, //TODO change to auth-service when migrating to docker compose from local server
+        options: { host: 'auth-service', port: 3001 },
       },
     ]),
     ClientsModule.register([
       {
         name: 'FRIENDSHIP_SERVICE',
         transport: Transport.TCP,
-        options: { host: 'localhost', port: 3003 }, //TODO change to friendship-service when migrating to docker compose from local server
+        options: { host: 'friendship-service', port: 3003 },
       },
     ]),
   ],

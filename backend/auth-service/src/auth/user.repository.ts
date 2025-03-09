@@ -39,16 +39,30 @@ export class UserRepository {
       `Attempting to fetch ${searchString ? `users with search string :: ${searchString}` : 'all users'}`,
     );
 
-    const filter = searchString
-      ? {
-          $or: [
-            { firstName: createSearchPattern(searchString) },
-            { lastName: createSearchPattern(searchString) },
-          ],
-        }
-      : {};
+    if (!searchString) {
+      return this.userModel.find().exec();
+    }
 
-    return this.userModel.find(filter).exec();
+    const searchPattern = createSearchPattern(searchString);
+
+    return this.userModel
+      .aggregate([
+        {
+          $addFields: {
+            fullName: { $concat: ['$firstName', ' ', '$lastName'] },
+          },
+        },
+        {
+          $match: {
+            $or: [
+              { firstName: searchPattern },
+              { lastName: searchPattern },
+              { fullName: searchPattern },
+            ],
+          },
+        },
+      ])
+      .exec();
   }
 
   async findUserById(userId: string): Promise<User | null> {

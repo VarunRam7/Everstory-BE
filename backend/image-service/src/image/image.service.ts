@@ -253,7 +253,12 @@ export class ImageService {
       );
 
       const userDetailsMap = new Map();
-      publicAccounts.forEach((user) => userDetailsMap.set(user._id, user));
+      publicAccounts.forEach((user) =>
+        userDetailsMap.set(user._id, {
+          ...user,
+          showUnfollow: followingUsers.includes(user._id) ? true : false,
+        }),
+      );
 
       additionalUserDetails?.forEach((user: any) =>
         userDetailsMap.set(user.id.toString(), user),

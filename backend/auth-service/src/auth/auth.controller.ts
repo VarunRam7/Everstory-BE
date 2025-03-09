@@ -6,6 +6,8 @@ import {
   Get,
   Query,
   Param,
+  UnauthorizedException,
+  Patch,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDTO } from './dto/request/signup.dto';
@@ -17,10 +19,14 @@ import { SkipJwtAuth } from './decorator/skip-jwt-auth.decorator';
 import { LoggedInUser } from '../common/decorator/logged-in-user.decorator';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { EventConstants } from '../common/constant/event.constant';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller(RouteConstants.AUTH_CONTROLLER)
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   @Post(RouteConstants.SIGNUP)
   @SkipJwtAuth()
@@ -38,6 +44,18 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getProfile(@LoggedInUser() loggedInUser: AuthResponseDTO) {
     return this.authService.findByEmail(loggedInUser.getEmail());
+  }
+
+  @Patch(RouteConstants.PRIVACY)
+  @UseGuards(JwtAuthGuard)
+  async updatePrivacySettings(
+    @Body('isPrivate') isPrivate: boolean,
+    @LoggedInUser() loggedInUser: AuthResponseDTO,
+  ) {
+    return this.authService.updatePrivacySettings(
+      isPrivate,
+      loggedInUser.getId(),
+    );
   }
 
   @MessagePattern(EventConstants.REMOVE_PROFILE_PHOTO)
@@ -100,5 +118,14 @@ export class AuthController {
   async getUserMinimalDetailsForIds(@Payload() data: { userIds: string[] }) {
     const { userIds } = data;
     return await this.authService.getUserMinimalDetailsForIds(userIds);
+  }
+
+  @MessagePattern(EventConstants.VERIFY_JWT)
+  async verifyJwt(@Payload() token: string) {
+    try {
+      return await this.jwtService.verifyAsync(token);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid Token');
+    }
   }
 }

@@ -8,6 +8,7 @@ import {
   BadRequestException,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { RouteConstants } from '../common/constant/route.constant';
 import { FollowRequestDTO } from './dto/request/follow-request.dto';
@@ -16,6 +17,8 @@ import { ResponseEnum } from '../common/enum/follow-request-status.enum';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { EventConstants } from '../common/constant/event.constant';
 import { RelationshipService } from './relationship.service';
+import { MicroserviceJwtAuthGuard } from '../guard/base-auth-guard/microservice-jwt-auth-guard';
+import { LoggedInUser } from '../common/decorator/logged-in-user.decorator';
 
 @Controller(RouteConstants.FRIENDSHIP_CONTROLLER)
 export class FriendshipController {
@@ -24,36 +27,47 @@ export class FriendshipController {
     private readonly relationshipService: RelationshipService,
   ) {}
 
+  @UseGuards(MicroserviceJwtAuthGuard)
   @Post(RouteConstants.CREATE_FOLLOW_REQUEST)
-  async createFollowRequest(@Body() followRequestDTO: FollowRequestDTO) {
-    return this.followRequestService.createFollowRequest(followRequestDTO);
+  async createFollowRequest(
+    @Body() followRequestDTO: FollowRequestDTO,
+    @LoggedInUser() loggedInUser: any,
+  ) {
+    return this.followRequestService.createFollowRequest(
+      followRequestDTO,
+      loggedInUser._id,
+    );
   }
 
+  @UseGuards(MicroserviceJwtAuthGuard)
   @Delete(RouteConstants.UNFOLLOW_USER)
   async unfollowUser(
-    @Query('requestBy') requestBy: string,
+    @LoggedInUser() loggedInUser: any,
     @Query('requestTo') requestTo: string,
   ) {
-    return this.relationshipService.unfollowUser(requestBy, requestTo);
+    return this.relationshipService.unfollowUser(loggedInUser._id, requestTo);
   }
 
+  @UseGuards(MicroserviceJwtAuthGuard)
   @Delete(RouteConstants.REVOKE_REQUEST)
   async revokeRequest(
-    @Query('requestBy') requestBy: string,
+    @LoggedInUser() loggedInUser: any,
     @Query('requestTo') requestTo: string,
   ) {
-    return this.followRequestService.revokeRequest(requestBy, requestTo);
+    return this.followRequestService.revokeRequest(loggedInUser._id, requestTo);
   }
 
+  @UseGuards(MicroserviceJwtAuthGuard)
   @Get(RouteConstants.GET_FOLLOW_REQUESTS_FOR_USER)
-  async getFollowRequestsForUser(@Param('userId') userId: string) {
+  async getFollowRequestsForUser(@LoggedInUser() loggedInUser: any) {
     return this.followRequestService
-      .getPendingFollowRequests(userId)
+      .getPendingFollowRequests(loggedInUser._id)
       .catch((error) => {
         throw error;
       });
   }
 
+  @UseGuards(MicroserviceJwtAuthGuard)
   @Patch(RouteConstants.RESPOND_FOLLOW_REQUEST)
   async respondToRequest(
     @Body('requestToken') requestToken: string,

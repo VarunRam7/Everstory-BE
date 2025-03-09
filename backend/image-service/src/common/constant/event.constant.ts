@@ -5,4 +5,5 @@ export const EventConstants = {
   FOLLOWING_USERS: 'following_users',
   GET_PUBLIC_ACCOUNTS: 'get_public_accounts',
   GET_USER_DETAILS_BY_IDS: 'get_user_details_by_ids',
+  VERIFY_JWT: 'verify_jwt',
 };

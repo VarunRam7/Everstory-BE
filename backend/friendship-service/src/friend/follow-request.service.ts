@@ -23,6 +23,7 @@ import { lastValueFrom } from 'rxjs';
 import { EventConstants } from '../common/constant/event.constant';
 import { RelationshipService } from './relationship.service';
 import { FollowRequestGateway } from './follow-request.gateway';
+import { Relationship } from './schema/relationship.schema';
 
 @Injectable()
 export class FollowRequestService {
@@ -37,14 +38,15 @@ export class FollowRequestService {
 
   async createFollowRequest(
     followRequestDTO: FollowRequestDTO,
-  ): Promise<FollowRequest> {
-    if (followRequestDTO.requestBy === followRequestDTO.requestTo) {
+    requestBy,
+  ): Promise<{ data: FollowRequest | Relationship; isFollowing: boolean }> {
+    if (requestBy === followRequestDTO.requestTo) {
       throw new BadRequestException('You cannot follow yourself');
     }
 
     const existingRequest =
       await this.followRequestRepository.findActiveFollowRequest(
-        followRequestDTO.requestBy,
+        requestBy,
         followRequestDTO.requestTo,
       );
 
@@ -56,11 +58,11 @@ export class FollowRequestService {
 
     try {
       this.logger.log(
-        `Attempting to fetch user details of both - follower :: ${followRequestDTO.requestBy} and to be followed :: ${followRequestDTO.requestTo}`,
+        `Attempting to fetch user details of both - follower :: ${requestBy} and to be followed :: ${followRequestDTO.requestTo}`,
       );
       const response = await lastValueFrom(
         this.authServiceClient.send(EventConstants.GET_FOLLOW_REQUEST_DETAILS, {
-          requestBy: followRequestDTO.requestBy,
+          requestBy: requestBy,
           requestTo: followRequestDTO.requestTo,
         }),
       );
@@ -68,44 +70,56 @@ export class FollowRequestService {
       [requestByUser, requestToUser] = response;
 
       this.logger.log(
-        `Fetched user details of both - follower :: ${followRequestDTO.requestBy} and to be followed :: ${followRequestDTO.requestTo}`,
+        `Fetched user details of both - follower :: ${requestBy} and to be followed :: ${followRequestDTO.requestTo}`,
       );
     } catch (eventError) {
       this.logger.error(`Error sending get event to auth-service:`, eventError);
     }
 
-    const createFollowRequestDTO = new CreateFollowRequestDTO(
-      new UserInfoDTO(
-        requestByUser.id,
-        requestByUser.firstName,
-        requestByUser.lastName,
-        requestByUser.profilePhoto,
-        requestByUser.isPrivate,
-      ),
-      new UserInfoDTO(
-        requestToUser.id,
-        requestToUser.firstName,
-        requestToUser.lastName,
-        requestToUser.profilePhoto,
-        requestToUser.isPrivate,
-      ),
-      generateRandomAlphanumericString(10),
-      FollowRequestStatus.PENDING,
-      false,
-    );
-
-    const followRequest =
-      await this.followRequestRepository.createFollowRequest(
-        createFollowRequestDTO,
+    if (!requestToUser.isPrivate) {
+      const relationship = await this.relationshipService
+        .createRelationship(
+          requestBy,
+          followRequestDTO.requestTo,
+        )
+        .catch((error) => {
+          throw error;
+        });
+      return { data: relationship, isFollowing: true };
+    } else {
+      const createFollowRequestDTO = new CreateFollowRequestDTO(
+        new UserInfoDTO(
+          requestByUser.id,
+          requestByUser.firstName,
+          requestByUser.lastName,
+          requestByUser.profilePhoto,
+          requestByUser.isPrivate,
+        ),
+        new UserInfoDTO(
+          requestToUser.id,
+          requestToUser.firstName,
+          requestToUser.lastName,
+          requestToUser.profilePhoto,
+          requestToUser.isPrivate,
+        ),
+        generateRandomAlphanumericString(10),
+        FollowRequestStatus.PENDING,
+        false,
       );
-    await this.followRequestGateway.notifyNewFollowRequest(
-      createFollowRequestDTO.getRequestTo().id.toString(),
-    );
 
-    this.logger.log(
-      `Successfully created a follow request from ${followRequest.requestBy} to ${followRequest.requestTo}`,
-    );
-    return followRequest;
+      const followRequest =
+        await this.followRequestRepository.createFollowRequest(
+          createFollowRequestDTO,
+        );
+      await this.followRequestGateway.notifyNewFollowRequest(
+        createFollowRequestDTO.getRequestTo().id.toString(),
+      );
+
+      this.logger.log(
+        `Successfully created a follow request from ${followRequest.requestBy} to ${followRequest.requestTo}`,
+      );
+      return { data: followRequest, isFollowing: false };
+    }
   }
 
   async revokeRequest(requestBy: string, requestTo: string) {

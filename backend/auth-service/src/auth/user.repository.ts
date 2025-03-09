@@ -14,9 +14,15 @@ export class UserRepository {
   ) {}
   private readonly logger = new Logger(UserRepository.name);
 
-  async findByEmail(email: string): Promise<UserDocument | null> {
+  async findByEmail(
+    email: string,
+    hidePassword = false,
+  ): Promise<UserDocument | null> {
     this.logger.log(`Attempting to find user by email :: ${email}`);
-    return this.userModel.findOne({ email });
+
+    if (hidePassword)
+      return this.userModel.findOne({ email }).select('-passsword');
+    else return this.userModel.findOne({ email });
   }
 
   async createUser(createUserDTO: CreateUserDTO): Promise<UserDocument> {
@@ -88,5 +94,23 @@ export class UserRepository {
     const objectIdArray = userIds.map((id) => new Types.ObjectId(id));
 
     return this.userModel.find({ _id: { $in: objectIdArray } });
+  }
+
+  async updatePrivacySettingsForUser(isPrivate: boolean, userId: string) {
+    this.logger.log(
+      `Attempting to update privacy settings, isPrivate-${isPrivate} for user :: ${userId}`,
+    );
+    return this.userModel
+      .findOneAndUpdate(
+        { _id: new Types.ObjectId(userId) },
+        {
+          $set: {
+            isPrivate,
+          },
+        },
+
+        { new: true },
+      )
+      .select('-password');
   }
 }

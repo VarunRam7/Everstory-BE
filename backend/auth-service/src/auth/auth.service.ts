@@ -54,6 +54,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         _id: user._id,
+        isPrivate: true,
       };
       const accessToken = this.jwtService.sign(payload);
 
@@ -91,6 +92,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         _id: user._id,
+        isPrivate: user.isPrivate,
       };
       const accessToken = this.jwtService.sign(payload);
 
@@ -108,7 +110,7 @@ export class AuthService {
   }
 
   async findByEmail(email: string) {
-    const user = await this.userRepository.findByEmail(email);
+    const user = await this.userRepository.findByEmail(email, true);
     if (user) {
       this.logger.log(`Successfully found user for email :: ${email}`);
       let followerFollowingCount;
@@ -145,7 +147,7 @@ export class AuthService {
       `Attempting to ${isEmpty(profilePhotoUrl) ? 'remove' : 'update'} profile photo for email :: ${email}`,
     );
     try {
-      const user = await this.userRepository.findByEmail(email);
+      const user = await this.userRepository.findByEmail(email, true);
       if (!user) {
         this.logger.warn(`User not found with email: ${email}`);
         throw new BadRequestException(`No user found with email :: ${email}`);
@@ -285,7 +287,7 @@ export class AuthService {
       user,
       userPosts.totalCount,
       user.isPrivate && !isFollowing ? [] : userPosts.posts,
-      user.isPrivate ? isFollowing : true,
+      isFollowing,
       isRequested ? true : false,
       followerFollowingCount.followers,
       followerFollowingCount.following,
@@ -333,5 +335,24 @@ export class AuthService {
     }
 
     return userMinimalDetails.map((user) => new UserMinimalDTO(user));
+  }
+
+  async updatePrivacySettings(isPrivate: boolean, userId: string) {
+    try {
+      const updatedPrivacy =
+        await this.userRepository.updatePrivacySettingsForUser(
+          isPrivate,
+          userId,
+        );
+      this.logger.log(
+        `Updated privacy settings, isPrivate-${isPrivate} for user :: ${userId}`,
+      );
+      return updatedPrivacy;
+    } catch (error) {
+      this.logger.error(
+        `Error while attempting to update privacy settings for user :: ${userId}`,
+      );
+      throw error;
+    }
   }
 }

@@ -12,6 +12,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
     volumes:
       - mongo_data:/data/db
+    networks:
+      - mynetwork
 
   auth-service:
     build: ./auth-service
@@ -22,6 +24,8 @@ services:
       - mongodb
     environment:
       - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}/authDB?authSource=${MONGO_DB_AUTH}
+    networks:
+      - mynetwork
 
   image-service:
     build: ./image-service
@@ -32,6 +36,8 @@ services:
       - mongodb
     environment:
       - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}/imageDB?authSource=${MONGO_DB_AUTH}
+    networks:
+      - mynetwork
 
   friendship-service:
     build: ./friendship-service
@@ -42,6 +48,12 @@ services:
       - mongodb
     environment:
       - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}/friendshipDB?authSource=${MONGO_DB_AUTH}
+    networks:
+      - mynetwork
 
 volumes:
   mongo_data:
+
+networks:
+  mynetwork:
+    external: true

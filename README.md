@@ -101,6 +101,7 @@ npm run start:dev
 Or run all services using Docker Compose:
 
 ```bash
+docker network create mynetwork
 docker compose build
 docker compose up
 ```
